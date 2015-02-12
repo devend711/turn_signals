@@ -14,6 +14,7 @@
 // and for input pins
 #define SWITCH_LEFT BIT5
 #define SWITCH_RIGHT BIT6
+#define SWITCH_MIDDLE ~(BIT5 + BIT6)
 
 /* Global Variables */
 
@@ -34,8 +35,8 @@ void init_buttons() {
 	 P1DIR &= ~(SWITCH_LEFT + SWITCH_RIGHT); // Set button pin as an input pin
 	 P1OUT |= (SWITCH_LEFT + SWITCH_RIGHT); // Set pull up resistor on for button
 	 P1REN |= (SWITCH_LEFT + SWITCH_RIGHT); // Enable pull up resistor for button to keep pin high until pressed
-	 // P1IES |= (SWITCH_LEFT + SWITCH_RIGHT); // Enable Interrupt to trigger on the falling edge (high (unpressed) to low (pressed) transition)
-	 P1IES &= ~(SWITCH_LEFT + SWITCH_RIGHT); // look for rising edge
+	 P1IES |= (SWITCH_LEFT + SWITCH_RIGHT); // Enable Interrupt to trigger on the falling edge (high (unpressed) to low (pressed) transition)
+	 //P1IES &= ~(SWITCH_LEFT + SWITCH_RIGHT); // look for rising edge
 	 P1IFG &= ~(SWITCH_LEFT + SWITCH_RIGHT); // Clear the interrupt flag for the button
 	 P1IE |= (SWITCH_LEFT + SWITCH_RIGHT); // Enable interrupts on port 1 for the button
 }
@@ -105,42 +106,15 @@ void main(void) {
 }
 
 void run_state_machine() {
-	if (~P1IN & SWITCH_LEFT) { // if the left button is currently down
-		switch(turn_state){
-			case 0: {
-				// we weren't turning, so now turn on the left signal
-				left_signal_on();
-				break;
-			}
-			case 1: {
-				// we were already blinking left - stop turn signal now
-				both_on();
-				break;
-			}
-			case 2: {
-				// we were blinking right - now switch to blinking left
-				left_signal_on();
-				break;
-			}
-		}
-	} else if (~P1IN & SWITCH_RIGHT) {
-		switch(turn_state){
-			case 0: {
-				// we weren't turning, so now turn on the right signal
-				right_signal_on();
-				break;
-			}
-			case 2: {
-				// we were already blinking right - stop turn signal now
-				both_on();
-				break;
-			}
-			case 1: {
-				// we were blinking left - now switch to blinking right
-				right_signal_on();
-				break;
-			}
-		}
+	if (P1IN & SWITCH_LEFT) { // if the left button is currently down
+		left_signal_on();
+		P1IES |= (SWITCH_LEFT + SWITCH_RIGHT); // now look for falling edge, which will occur when the switch is in the middle
+	} else if (P1IN & SWITCH_RIGHT) {
+		right_signal_on();
+		P1IES |= (SWITCH_LEFT + SWITCH_RIGHT); // now look for falling edge, which will occur when the switch is in the middle
+	} else if (SWITCH_MIDDLE) {
+		both_on();
+		P1IES &= ~(SWITCH_LEFT + SWITCH_RIGHT); // now look for rising edge, which will occur when the switch is left or right
 	}
 }
 

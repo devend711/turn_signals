@@ -18,7 +18,8 @@
 
 /* Global Variables */
 
-unsigned int timeout_counter;   // current counter for button timeout
+unsigned int turn_state; 			// current button input state
+unsigned int timeout_counter;   // down counter for button timeout
 unsigned char led_flash;		// flashing button bitmask
 unsigned int flash_counter; 	// down counter to next flash
 unsigned int current_flash_interval; // flash interval
@@ -96,20 +97,25 @@ void right_signal_on() {
 void main(void) {
 	BCSCTL1 = CALBC1_1MHZ;	// set 1Mhz calibration for clock
   	DCOCTL  = CALDCO_1MHZ;
+
   	init_wdt();
   	init_gpio();
   	init_timer();
   	both_on();
+  	BCSCTL3 |= LFXT1S_2;
 	 _bis_SR_register(GIE+LPM0_bits);  // enable interrupts and also turn the CPU off!
 }
 
 void run_state_machine() {
 	if (P1IN & SWITCH_LEFT) { // if the left button is currently down
 		left_signal_on();
+		P1IES |= (SWITCH_LEFT + SWITCH_RIGHT); // now look for falling edge, which will occur when the switch is in the middle
 	} else if (P1IN & SWITCH_RIGHT) {
 		right_signal_on();
+		P1IES |= (SWITCH_LEFT + SWITCH_RIGHT); // now look for falling edge, which will occur when the switch is in the middle
 	} else if (SWITCH_MIDDLE) {
 		both_on();
+		P1IES &= ~(SWITCH_LEFT + SWITCH_RIGHT); // now look for rising edge, which will occur when the switch is left or right
 	}
 }
 

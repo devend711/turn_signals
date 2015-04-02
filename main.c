@@ -74,6 +74,7 @@ void init_timer() { // use timer to debounce
 void both_on(){
 	P1OUT |= (LEFT_LIGHT + RIGHT_LIGHT); // both on
 	led_flash= 0;
+	turn_state = 0;
 }
 
 void left_signal_on() {
@@ -81,6 +82,7 @@ void left_signal_on() {
 	led_flash = LEFT_LIGHT;
 	current_flash_interval=SHORTFLASH;
 	flash_counter=current_flash_interval;  // start counting down from here
+	turn_state = 1;
 }
 
 void right_signal_on() {
@@ -88,6 +90,7 @@ void right_signal_on() {
 	led_flash = RIGHT_LIGHT;
 	current_flash_interval=SHORTFLASH;
 	flash_counter=current_flash_interval;
+	turn_state = 2;
 }
 
 void main(void) {
